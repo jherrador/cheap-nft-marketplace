@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>NFT MARKETPLACE</title>
+    </head>
+    <body>
+        <h1> Auction </h1>
+        <button onclick="addNewItem()">Add new </button>
+
+        <h2> Current listed items</h2>
+        <ul id="listed_nfts">
+            <% nfts.forEach(function (nft) { %>
+                <%- include('../components/nft_item', {nft: nft}); %>
+            <% }) %>
+        </ul>
+        <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+        <script src="../../js/auction.js"></script>
+    </body>
+</html>
