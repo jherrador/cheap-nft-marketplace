@@ -5,6 +5,6 @@ const router = express.Router();
 
 router.get("/auction/list", controller.list);
 
-router.post("/auction/new/:tokenAddress/:tokenId", controller.new);
+router.post("/auction/new/:tokenAddress/:tokenId/:price", controller.new);
 
 module.exports = router;

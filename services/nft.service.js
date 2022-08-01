@@ -1,11 +1,13 @@
+// Deprecated
+
 const nftService = {};
-const Web3 = require("web3");
+const { ethers } = require("ethers");
 const axios = require("axios");
 const erc721Abi = require("../ABI/erc721.abi");
 
-const web3 = new Web3("https://polygon-rpc.com/"); // Refactor to robsten and parametrize
+const provider = new ethers.providers.JsonRpcProvider(); // Refactor to robsten and parametrize
 nftService.getDetails = async (tokenAddress, tokenId) => {
-  const contract = new web3.eth.Contract(erc721Abi, tokenAddress);
+  const contract = new ethers.Contract(tokenAddress, erc721Abi, provider);
   let metadata = { };
   let tokenURI = "";
 
