@@ -16,22 +16,47 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="d-flex justify-content-center" id="create-auction-modal-loader">
-                        <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                    <div id="owner_nfts" class="row">
-
-                    </div>
-                    
-                    
+                    <%- include('../components/create_auction_modal_content'); %>
                 </div>
                 <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="addNewItem()">Create</button>
                 </div>
             </div>
+            </div>
+        </div>
+
+        <!-- Modal -->
+        <div class="modal fade" id="bid-modal" tabindex="-1" aria-labelledby="bid-modal-label" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                    <h5 class="modal-title" id="bid-modal-label">Bid</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="currentBidElementId"/>
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-4">
+                                    <label for="auction-bid" class="form-label">Your offer </label>
+                                    <input type="number" class="form-control" id="auction-bid" placeholder="">
+                                </div>
+                                <div class="row">
+                                    <div class="col">
+                                        <span id="passwordHelpInline" class="form-text">
+                                        Must be higher than <span id="minimum-bid-for-item"></span>.
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        
+                        </div>
+                        
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" onclick="createBid()">Confirm</button>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="container-fluid">
@@ -42,8 +67,16 @@
                         <button class="btn btn-primary" onclick="mint()">Mint NFT </button>
                     </div>
                     <div class="col-3">
-                        <button class="btn btn-primary" onclick="approveAll()">Approve All NFTs </button>
+                        <a class="btn btn-primary" target="_blank" href="https://bybit-exchange.github.io/erc20-faucet/">TUSDT Faucet </a>
                     </div>
+                    
+                    <div class="col-3">
+                        <button class="btn btn-primary" onclick="approveAllERC721()">Approve All NFTs </button>
+                    </div>
+                    <div class="col-3">
+                        <button class="btn btn-primary" onclick="approveERC20()">Approve ERC20 Token </button>
+                    </div>
+
                     <button class="btn btn-primary" onclick="prepareAuction()">Create auction</button>
                     </div>
                     <div class="col-3">
@@ -69,5 +102,6 @@
         <script src="https://cdn.jsdelivr.net/npm/@alch/alchemy-web3@latest/dist/alchemyWeb3.min.js"></script>
         <script src="../../js/auction.js"></script>
         <script src="../../abi/erc721.abi.js"></script>
+        <script src="../../abi/erc20.abi.js"></script>
     </body>
 </html>

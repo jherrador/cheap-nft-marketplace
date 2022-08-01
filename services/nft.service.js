@@ -5,13 +5,14 @@ const { ethers } = require("ethers");
 const axios = require("axios");
 const erc721Abi = require("../ABI/erc721.abi");
 
-const provider = new ethers.providers.JsonRpcProvider(); // Refactor to robsten and parametrize
+const provider = new ethers.providers.JsonRpcProvider("https://eth-rinkeby.alchemyapi.io/v2/WWJwKWkSCfJISmjtheW46Dz1Zbti0VLA"); // Refactor to robsten and parametrize
 nftService.getDetails = async (tokenAddress, tokenId) => {
   const contract = new ethers.Contract(tokenAddress, erc721Abi, provider);
   let metadata = { };
   let tokenURI = "";
-
-  await contract.methods.tokenURI(tokenId).call().then(async (_tokenURI) => {
+  console.log(contract);
+  console.log(contract.address);
+  await contract.tokenURI(tokenId).then(async (_tokenURI) => {
     tokenURI = _tokenURI;
   });
 
@@ -19,7 +20,7 @@ nftService.getDetails = async (tokenAddress, tokenId) => {
     metadata = _metadata;
   });
 
-  await contract.methods.ownerOf(tokenId).call().then(async (_owner) => {
+  await contract.ownerOf(tokenId).then(async (_owner) => {
     metadata.owner = _owner;
   });
   const imgUrl = await nftService.getIpfsImageUri(tokenURI, metadata.image);
