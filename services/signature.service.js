@@ -54,13 +54,12 @@ signatureService._prepareBidSignature = async (_data) => {
 };
 
 signatureService._prepareListingSignature = async (_data) => {
-  console.log("HELLO 1");
   const data = {
     tokenId: _data.tokenId,
     contractAddress: _data.tokenAddress,
     minimumBid: _data.minimumBid,
   };
-  console.log("HELLO 2");
+
   const type = {
     Auction: [
       { name: "tokenId", type: "uint256" },
@@ -68,9 +67,8 @@ signatureService._prepareListingSignature = async (_data) => {
       { name: "minimumBid", type: "uint256" },
     ],
   };
-  console.log("HELLO 2.5");
+
   const network = await provider.getNetwork();
-  console.log("HELLO 3");
   const domain = {
     name: "Cheap NFT Marketplace",
     version: "1",
@@ -78,7 +76,6 @@ signatureService._prepareListingSignature = async (_data) => {
     verifyingContract: "0x81782d0400361293ACB55A6709Ef212C70EAdB4e",
   };
 
-  console.log("HELLO 4");
   return [domain, type, data];
 };
 

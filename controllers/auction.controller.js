@@ -7,7 +7,6 @@ const nftService = require("../services/nft.service");
 const controller = {};
 
 controller.list = (req, res) => {
-  console.log("Should list all nfts in auction");
   res.render("pages/auction", { nfts: req.app.get("listedNfts") });
 };
 
@@ -19,7 +18,6 @@ controller.new = async (req, res) => {
 
   if (!await
   signatureService.verify("listing", params.signature, params.ownerAddress, params)) {
-    console.log("Entro");
     res.status(400).send({
       message: "Invalid Signature",
     });
@@ -51,11 +49,10 @@ controller.new = async (req, res) => {
 controller.bid = async (req, res) => {
   const { params } = req;
   const allNfts = req.app.get("listedNfts");
-  console.log("A");
   const bidedNftIndex = allNfts.findIndex((nft) => nft.elementId === params.elementId);
   allNfts[bidedNftIndex].buyer = params.bidderAddress;
   allNfts[bidedNftIndex].buyerBid = params.bid;
-  console.log("B");
+
   if (!await
   signatureService.verify("bid", params.signature, allNfts[bidedNftIndex].buyer, allNfts[bidedNftIndex])) {
     res.status(400).send({
@@ -64,7 +61,6 @@ controller.bid = async (req, res) => {
     return;
   }
 
-  console.log("C");
   allNfts[bidedNftIndex].status = "bidded";
   allNfts[bidedNftIndex].lastUpdate = moment().format();
   allNfts[bidedNftIndex].bidSignatures.buyer = params.signature;

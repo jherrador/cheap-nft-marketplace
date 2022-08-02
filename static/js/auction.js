@@ -92,7 +92,7 @@ window.ethereum.on("accountsChanged", (accounts) => {
 });
 
 const addNewItem = async (contractAddress, tokenId, hashId) => {
-  const minbid = document.getElementById("auction-min-bid").value;
+  const minbid = ethers.utils.parseEther(document.getElementById("auction-min-bid").value);
 
   document.getElementById("min-bid-required-text").classList.add("d-none");
 
@@ -246,7 +246,7 @@ const createBid = async () => {
   const bidedNft = auctionNFTs.find((nft) => nft.elementId === elementId);
   const newBid = ethers.utils.parseEther(document.getElementById("auction-bid").value);
 
-  if (newBid.lte(ethers.utils.parseEther(bidedNft.minimumBid))) {
+  if (newBid.lte(ethers.BigNumber.from(bidedNft.minimumBid))) {
     document.getElementById("passwordHelpInline").classList.add("text-danger");
     return;
   }
@@ -290,7 +290,7 @@ const setBtnBid = async () => {
 
 const bid = async (elementId) => {
   const bidedNft = auctionNFTs.find((nft) => nft.elementId === elementId);
-  document.getElementById("minimum-bid-for-item").innerHTML = bidedNft.minimumBid;
+  document.getElementById("minimum-bid-for-item").innerHTML = ethers.utils.formatEther(bidedNft.minimumBid);
   document.getElementById("currentBidElementId").value = elementId;
 
   await setBtnBid();
