@@ -54,7 +54,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" onclick="createBid()">Confirm</button>
+                        <button type="button" class="btn btn-primary" id="btn-bid-confirm" onclick=""></button>
                     </div>
                 </div>
             </div>
@@ -63,25 +63,11 @@
             <h1> Auction </h1>
             <div class="row">
                 <div class="col-3">
-                    <div class="col-3">
-                        <button class="btn btn-primary" onclick="mint()">Mint NFT </button>
-                    </div>
-                    <div class="col-3">
-                        <a class="btn btn-primary" target="_blank" href="https://bybit-exchange.github.io/erc20-faucet/">TUSDT Faucet </a>
-                    </div>
+                    <button class="btn btn-primary" onclick="mint()">Mint NFT </button>
+                </div>
                     
-                    <div class="col-3">
-                        <button class="btn btn-primary" onclick="approveAllERC721()">Approve All NFTs </button>
-                    </div>
-                    <div class="col-3">
-                        <button class="btn btn-primary" onclick="approveERC20()">Approve ERC20 Token </button>
-                    </div>
-
-                    <button class="btn btn-primary" onclick="prepareAuction()">Create auction</button>
-                    </div>
-                    <div class="col-3">
-                        <button class="btn btn-secondary" onclick="signListing()">signListing </button>
-                    </div>
+                <div class="col-3">
+                    <button class="btn btn-primary" onclick="approveAllERC721()" id="auction-btn">Enable auction</button>
                 </div>
             </div>
             <div class="row">
@@ -95,7 +81,6 @@
                 </div>
             </div>
         </div>
-        
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-A3rJD856KowSb7dwlZdYEkO39Gagi7vIsF0jrRAoQmDKKtQBHUuLZ9AsSv4jD4Xa" crossorigin="anonymous"></script>
         <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
         <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
@@ -103,5 +88,6 @@
         <script src="../../js/auction.js"></script>
         <script src="../../abi/erc721.abi.js"></script>
         <script src="../../abi/erc20.abi.js"></script>
+        <script src="../../abi/marketplace.abi.js"></script>
     </body>
 </html>
