@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.get("/", controller.index);
 router.get("/auction/list", controller.list);
-router.get("/auction/listedItems", controller.listAllNfts);
+router.post("/auction/listedItems", controller.listAllNfts);
 
 router.post("/auction/new/:tokenAddress/:tokenId/:minimumBid/:signature/:ownerAddress", controller.new);
 router.post("/auction/bid/:elementId/:bid/:signature/:bidderAddress", controller.bid);

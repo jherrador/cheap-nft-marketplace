@@ -59,7 +59,15 @@
                 </div>
             </div>
         </div>
-        <div class="container mt-5">
+        <div class="container mt-5 position-absolute top-50 start-50 translate-middle invisible" id="wallet-container">
+            <div class="row">
+                <div class="col text-center">
+                    <h1> A connected Wallet is needed to continue.</h1>
+                    <a class="btn btn-primary" href="/auction/list">Refresh</a>
+                </div>
+            </div>
+        </div>
+        <div class="container mt-5 invisible" id="page-container">
             <h1> Auction </h1>
             <div class="row mt-4">
                 <div class="col-3">
@@ -88,6 +96,9 @@
         <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
         <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
         <script src="https://cdn.jsdelivr.net/npm/@alch/alchemy-web3@latest/dist/alchemyWeb3.min.js"></script>
+        <script src="../../js/constants.js"></script>
+        <script src="../../js/utils.js"></script>
+        <script src="../../js/signature.js"></script>
         <script src="../../js/auction.js"></script>
         <script src="../../abi/erc721.abi.js"></script>
         <script src="../../abi/erc20.abi.js"></script>

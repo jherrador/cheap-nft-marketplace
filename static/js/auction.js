@@ -6,28 +6,23 @@ const bidModal = new bootstrap.Modal(document.getElementById("bid-modal"));
 let provider;
 let signer;
 let auctionNFTs = [];
-const ERC721_ADDRESS = "0xbDe6e860D0a32eC37F30562F6c915D2A580ef71d";
-const ERC20_ADDRESS = "0xB55BbBCF56AD761A4E1b85d7E6bbD1b27c99570D";
-const MARKETPLACE_ADDRESS = "0x08a01AE2547c67B7ece24BcCeabB61159675c6bF";
-const DEFAULT_TOKEN_URI = "https://ipfs.io/ipfs/QmdzBhpibPZTPBPL1DPXnv8AvLoAN5TTDzczWw36RoSkoP";
-let chainId;
-let domain;
-const types = {
-  Auction: [
-    { name: "tokenId", type: "uint256" },
-    { name: "contractAddress", type: "address" },
-    { name: "minimumBid", type: "uint256" },
-  ],
+
+const initialSetup = async () => {
+  // Pedir si tiene el all aproval
+  await setAuctionButton();
+  // mostrar boton A o B
 };
 
-const typeBid = {
-  Auction: [
-    { name: "tokenId", type: "uint256" },
-    { name: "contractAddress", type: "address" },
-    { name: "ownerAddress", type: "address" },
-    { name: "bidderAddress", type: "address" },
-    { name: "bid", type: "uint256" },
-  ],
+const setAuctionButton = async () => {
+  const btn = document.getElementById("auction-btn");
+  if (await checkApproveAllERC721()) {
+    btn.onclick = setupNewListing;
+    btn.innerHTML = "New Auction";
+    btn.disabled = false;
+  } else {
+    btn.onclick = approveAllERC721;
+    btn.innerHTML = "Enable Auction";
+  }
 };
 
 const refreshAuctionList = (nfts) => {
@@ -38,29 +33,8 @@ const refreshAuctionList = (nfts) => {
   document.getElementById("listed-nft").style.display = "inline";
 
   nfts.forEach(async (nft) => {
-    let button = "";
+    const button = "";
     const signerAddress = await signer.getAddress();
-    if (nft.status === "listed") {
-      if (signerAddress === nft.owner) {
-        button = "<button class=\"btn btn-white stretched-link w-100\" disabled>Your NFT</button>";
-      } else {
-        button = `<button class="btn btn-primary stretched-link w-100" onclick="bid('${nft.elementId}')">Bid</button>`;
-      }
-    } else if (nft.status === "bidded") {
-      if (signerAddress === nft.owner) {
-        button = `<button class="btn btn-primary stretched-link w-100" onclick="confirmBid('${nft.elementId}')">Confirm Bid</button>`;
-      } else {
-        button = "<button class=\"btn btn-white stretched-link w-100\" onclick=\"\" disabled>Already Bidded</button>";
-      }
-    } else if (nft.status === "confirmed") {
-      if (signerAddress === nft.owner || signerAddress === nft.buyer) {
-        button = `<button class="btn btn-primary stretched-link w-100" onclick="trade('${nft.elementId}')" id="btn-trade">Trade</button>`;
-      } else {
-        button = "<button class=\"btn btn-white stretched-link w-100\" onclick=\"\" disabled>Unavailable</button>";
-      }
-    } else if (nft.status === "finished") {
-      button = "<button class=\"btn btn-white stretched-link w-100\" disabled>Finished</button>";
-    }
 
     const nftElement = `
     <div class="col-xl-3 col-md-4 col-sm-6 mb-5">
@@ -68,7 +42,7 @@ const refreshAuctionList = (nfts) => {
         <img src='${nft.image}' alt='' class="img-fluid px-3 py-3"/>
         <div class="card-body">
           <h5 class="card-title">${nft.name} ${parseInt(nft.tokenId) > 10000 ? "" : `#${parseInt(nft.tokenId)}`}</h5>
-          ${button}
+          ${getNFTButtonStatus(nft, signerAddress)}
         </div>
       </div>
     </div>`;
@@ -77,76 +51,51 @@ const refreshAuctionList = (nfts) => {
   });
 };
 
-const getListedNfts = async () => {
-  await axios.get("/auction/listedItems/", {
+const backendCall = async (url) => {
+  await axios.post(url, {
   })
     .then(async (response) => {
       auctionNFTs = response.data;
-
       await refreshAuctionList(auctionNFTs);
     })
     .catch((error) => {
-      console.log("auction.getListedNfts: Cannot add new nft to the auction", error);
+      console.log("auction.backendCall:", error);
     });
 };
 
-window.ethereum.on("accountsChanged", (accounts) => {
-  location.reload();
-});
+const getListedNfts = async () => {
+  await backendCall("/auction/listedItems/");
+};
 
-const addNewItem = async (contractAddress, tokenId, hashId) => {
+const addNFT = async (contractAddress, tokenId, hashId) => {
   let minbid = document.getElementById("auction-min-bid").value;
+  const btnItem = document.getElementById(`btn-nft-${hashId}`);
+  const minBidRequiredText = document.getElementById("min-bid-required-text");
+
   if (minbid === undefined || minbid === "" || minbid <= 0) {
-    document.getElementById("min-bid-required-text").classList.remove("d-none");
+    minBidRequiredText.classList.remove("d-none");
     return;
   }
   minbid = ethers.utils.parseEther(minbid);
 
-  document.getElementById("min-bid-required-text").classList.add("d-none");
+  minBidRequiredText.classList.add("d-none");
 
-  const data = {
-    tokenId,
-    contractAddress,
-    minimumBid: minbid,
-  };
+  const signature = await requestListSignature(tokenId, contractAddress, minbid);
 
-  const signature = await signer._signTypedData(domain, types, data);
+  btnItem.innerHTML = "<span class='spinner-border spinner-border-sm' role='status' aria-hidden='true'></span> Select";
+  btnItem.disabled = true;
 
-  document.getElementById(`btn-nft-${hashId}`).innerHTML = "<span class='spinner-border spinner-border-sm' role='status' aria-hidden='true'></span> Select";
-  document.getElementById(`btn-nft-${hashId}`).disabled = true;
-  await axios.post(`/auction/new/${contractAddress}/${tokenId}/${minbid}/${signature}/${await signer.getAddress()}`, {
-  })
-    .then(async (response) => {
-      auctionNFTs = response.data;
-      await refreshAuctionList(auctionNFTs);
-
-      createAuction.hide();
-    })
-    .catch((error) => {
-      console.log("auction.addNewItem: Cannot add new nft to the auction", error);
-    });
+  await backendCall(`/auction/new/${contractAddress}/${tokenId}/${minbid}/${signature}/${await signer.getAddress()}`);
+  createAuction.hide();
 };
 
-const listAllNfts = async () => {
-  // Get all NFTs using alchemy
+const getAllOwnedNFTs = async () => {
   const nfts = await web3.alchemy.getNfts({ owner: await signer.getAddress() });
 
   return nfts.ownedNfts;
 };
 
-const prepareAuction = async () => {
-  document.getElementById("auction-form").style.display = "none";
-  document.getElementById("owner_nfts").innerHTML = "";
-  document.getElementById("auction-min-bid").value = "";
-  createAuction.show();
-
-  const nfts = await listAllNfts();
-
-  if (nfts.length === 0 || nfts === undefined) {
-    document.getElementById("owner_nfts").innerHTML = "<button class=\"btn btn-primary\" onclick=\"mint()\">Mint NFT </button>";
-  } else {
-    document.getElementById("auction-form").style.display = "inline";
-  }
+const fillOwnedNFTsList = (nfts) => {
   nfts.forEach((nft) => {
     let alreadyListed = false;
     auctionNFTs.forEach(async (_nft) => {
@@ -159,10 +108,31 @@ const prepareAuction = async () => {
       appendNFTToList(nft);
     }
   });
+};
 
-  if (document.getElementById("owner_nfts").innerHTML === "") {
-    document.getElementById("auction-form").style.display = "none";
-    document.getElementById("owner_nfts").innerHTML = "<button class=\"btn btn-primary\" onclick=\"mint()\">Mint NFT </button>";
+const setupNewListing = async () => {
+  const auctionForm = document.getElementById("auction-form");
+  const ownerNftsList = document.getElementById("owner_nfts");
+  const inputMinBid = document.getElementById("auction-min-bid");
+  const nfts = await getAllOwnedNFTs();
+
+  auctionForm.style.display = "none";
+  ownerNftsList.innerHTML = "";
+  inputMinBid.value = "";
+
+  createAuction.show();
+
+  if (nfts.length === 0 || nfts === undefined) {
+    ownerNftsList.innerHTML = "<button class=\"btn btn-primary\" onclick=\"mint()\">Mint NFT </button>";
+  } else {
+    auctionForm.style.display = "inline";
+  }
+
+  fillOwnedNFTsList(nfts);
+
+  if (ownerNftsList.innerHTML === "") {
+    auctionForm.style.display = "none";
+    ownerNftsList.innerHTML = "<button class=\"btn btn-primary\" onclick=\"mint()\">Mint NFT </button>";
   }
   document.getElementById("create-auction-modal-loader").style.visibility = "hidden";
 };
@@ -174,7 +144,7 @@ const appendNFTToList = (nft) => {
       <img src='${nft.media[0].gateway}' alt='' class="img-fluid px-3 py-3"/>
       <div class="card-body">
         <h5 class="card-title">${nft.title} ${parseInt(nft.id.tokenId) > 10000 ? "" : `#${parseInt(nft.id.tokenId)}`}</h5>
-        <button id="btn-nft-${nft.contract.address}${nft.id.tokenId}" class="btn btn-primary stretched-link w-100" onclick="addNewItem('${nft.contract.address}', ${parseInt(nft.id.tokenId)}, '${nft.contract.address}${nft.id.tokenId}')">Select</button>
+        <button id="btn-nft-${nft.contract.address}${nft.id.tokenId}" class="btn btn-primary stretched-link w-100" onclick="addNFT('${nft.contract.address}', ${parseInt(nft.id.tokenId)}, '${nft.contract.address}${nft.id.tokenId}')">Select</button>
       </div>
     </div>
   </div>`;
@@ -182,141 +152,67 @@ const appendNFTToList = (nft) => {
   document.getElementById("owner_nfts").innerHTML += nftElement;
 };
 
-const mint = async () => {
-  const erc721Contract = new ethers.Contract(ERC721_ADDRESS, ERC721_ABI, provider);
-  const contractWithSigner = erc721Contract.connect(signer);
-
-  contractWithSigner.createCollectible(await signer.getAddress(), DEFAULT_TOKEN_URI);
-
-  erc721Contract.on("Transfer", (from, to, tokenID) => {
-    location.reload();
-  });
-};
-const mintErc20 = async () => {
-  const erc20Contract = new ethers.Contract(ERC20_ADDRESS, ERC20_ABI, provider);
-  const contractWithSigner = erc20Contract.connect(signer);
-
-  contractWithSigner.mint(await signer.getAddress(), ethers.utils.parseEther("100"));
-
-  erc20Contract.on("Transfer", (from, to, tokenID) => {
-    location.reload();
-  });
-};
-
-const approveAllERC721 = () => {
-  const erc721Contract = new ethers.Contract(ERC721_ADDRESS, ERC721_ABI, provider);
-  const contractWithSigner = erc721Contract.connect(signer);
-
-  contractWithSigner.setApprovalForAll(MARKETPLACE_ADDRESS, true);
-
-  document.getElementById("auction-btn").innerHTML = "<span class='spinner-border spinner-border-sm' role='status' aria-hidden='true'></span> Enable Auction";
-  document.getElementById("auction-btn").disabled = true;
-
-  erc721Contract.on("ApprovalForAll", async (owner, operator, approved) => {
-    if (owner === await signer.getAddress() && operator === MARKETPLACE_ADDRESS) {
-      await setAuctionButton();
-    }
-  });
-};
-
-const checkApproveAllERC721 = async () => {
-  const erc721Contract = new ethers.Contract(ERC721_ADDRESS, ERC721_ABI, provider);
-  const contractWithSigner = erc721Contract.connect(signer);
-
-  return await contractWithSigner.isApprovedForAll(await signer.getAddress(), MARKETPLACE_ADDRESS);
-};
-
-const approveERC20 = async () => {
-  const erc20Contract = new ethers.Contract(ERC20_ADDRESS, ERC20_ABI, provider);
-  const contractWithSigner = erc20Contract.connect(signer);
-
-  contractWithSigner.approve(MARKETPLACE_ADDRESS, ethers.constants.MaxUint256);
-
-  document.getElementById("btn-bid-confirm").innerHTML = "<span class='spinner-border spinner-border-sm' role='status' aria-hidden='true'></span> Enable";
-  document.getElementById("btn-bid-confirm").disabled = true;
-
-  erc20Contract.on("Approval", async (owner, spender, value) => {
-    if (owner === await signer.getAddress()) {
-      setBtnBid();
-    }
-  });
-};
-
-const checkApproveAllERC20 = async () => {
-  let allowance = 0;
-  const erc20Contract = new ethers.Contract(ERC20_ADDRESS, ERC20_ABI, provider);
-
-  await erc20Contract.allowance(await signer.getAddress(), MARKETPLACE_ADDRESS).then((response) => {
-    allowance = response;
-  });
-
-  return allowance.gt(0);
-};
-
-const verifySignature = async (signature, auction) => {
-  const expectedSignerAddress = await signer.getAddress();
-  const recoveredAddress = ethers.utils.verifyTypedData(domain, types, auction, signature);
-};
-
-const splitSignature = (signature) => {
-  const expanded = ethers.utils.splitSignature(signature);
-
-  console.log(expanded);
-};
-
 const createBid = async () => {
   const signerAddress = await signer.getAddress();
   const elementId = document.getElementById("currentBidElementId").value;
+  const passwordHelpInlineElement = document.getElementById("passwordHelpInline");
+  const auctionBidElement = document.getElementById("auction-bid");
+  const newBid = ethers.utils.parseEther(auctionBidElement.value);
   const bidedNft = auctionNFTs.find((nft) => nft.elementId === elementId);
 
-  if (document.getElementById("auction-bid").value === "" || document.getElementById("auction-bid").value === undefined) {
-    document.getElementById("passwordHelpInline").classList.add("text-danger");
+  passwordHelpInlineElement.classList.remove("text-danger");
+
+  if (auctionBidElement.value === "" || auctionBidElement.value === undefined || newBid.lte(ethers.BigNumber.from(bidedNft.minimumBid))) {
+    passwordHelpInlineElement.classList.add("text-danger");
     return;
   }
-  const newBid = ethers.utils.parseEther(document.getElementById("auction-bid").value);
 
-  if (newBid.lte(ethers.BigNumber.from(bidedNft.minimumBid))) {
-    document.getElementById("passwordHelpInline").classList.add("text-danger");
-    return;
+  const signature = await requestBidSignature(parseInt(bidedNft.tokenId), bidedNft.contract, bidedNft.owner, signerAddress, newBid);
+
+  await backendCall(`/auction/bid/${elementId}/${newBid}/${signature}/${signerAddress}`);
+  bidModal.hide();
+};
+
+const getNFTButtonStatus = (nft, signerAddress) => {
+  let button = "";
+  if (nft.status === "listed") {
+    if (signerAddress === nft.owner) {
+      button = "<button class=\"btn btn-white stretched-link w-100\" disabled>Your NFT</button>";
+    } else {
+      button = `<button class="btn btn-primary stretched-link w-100" onclick="setupNewBid('${nft.elementId}')">Bid</button>`;
+    }
+  } else if (nft.status === "bidded") {
+    if (signerAddress === nft.owner) {
+      button = `<button class="btn btn-primary stretched-link w-100" onclick="confirmBid('${nft.elementId}')">Confirm Bid</button>`;
+    } else {
+      button = "<button class=\"btn btn-white stretched-link w-100\" onclick=\"\" disabled>Already Bidded</button>";
+    }
+  } else if (nft.status === "confirmed") {
+    if (signerAddress === nft.owner || signerAddress === nft.buyer) {
+      button = `<button class="btn btn-primary stretched-link w-100" onclick="executeTrade('${nft.elementId}')" id="btn-trade">Trade</button>`;
+    } else {
+      button = "<button class=\"btn btn-white stretched-link w-100\" onclick=\"\" disabled>Unavailable</button>";
+    }
+  } else if (nft.status === "finished") {
+    button = "<button class=\"btn btn-white stretched-link w-100\" disabled>Finished</button>";
   }
-  document.getElementById("passwordHelpInline").classList.remove("text-danger");
 
-  const data = {
-    tokenId: parseInt(bidedNft.tokenId),
-    contractAddress: bidedNft.contract,
-    ownerAddress: bidedNft.owner,
-    bidderAddress: signerAddress,
-    bid: newBid,
-  };
-  const signature = await signer._signTypedData(domain, typeBid, data);
-
-  await axios.post(`/auction/bid/${elementId}/${newBid}/${signature}/${signerAddress}`, {
-  })
-    .then((response) => {
-      auctionNFTs = response.data;
-
-      refreshAuctionList(auctionNFTs);
-
-      bidModal.hide();
-    })
-    .catch((error) => {
-      console.log("auction.createBid: Cannot add new nft to the auction", error);
-    });
+  return button;
 };
 
 const setBtnBid = async () => {
-  const btn = document.getElementById("btn-bid-confirm");
+  const btnBidConfirmElement = document.getElementById("btn-bid-confirm");
   if (await checkApproveAllERC20()) {
-    btn.onclick = createBid;
-    btn.innerHTML = "Bid";
-    btn.disabled = false;
+    btnBidConfirmElement.onclick = createBid;
+    btnBidConfirmElement.innerHTML = "Bid";
+    btnBidConfirmElement.disabled = false;
   } else {
-    btn.onclick = approveERC20;
-    btn.innerHTML = "Enable";
+    btnBidConfirmElement.onclick = approveERC20;
+    btnBidConfirmElement.innerHTML = "Enable";
   }
 };
 
-const bid = async (elementId) => {
+const setupNewBid = async (elementId) => {
   const bidedNft = auctionNFTs.find((nft) => nft.elementId === elementId);
   document.getElementById("minimum-bid-for-item").innerHTML = ethers.utils.formatEther(bidedNft.minimumBid);
   document.getElementById("currentBidElementId").value = elementId;
@@ -329,33 +225,19 @@ const bid = async (elementId) => {
 const confirmBid = async (elementId) => {
   const bidedNft = auctionNFTs.find((nft) => nft.elementId === elementId);
   const signerAddress = await signer.getAddress();
-  const data = {
-    tokenId: parseInt(bidedNft.tokenId),
-    contractAddress: bidedNft.contract,
-    ownerAddress: bidedNft.owner,
-    bidderAddress: bidedNft.buyer,
-    bid: bidedNft.buyerBid,
-  };
 
   if (signerAddress !== bidedNft.owner) { return; }
 
-  const signature = await signer._signTypedData(domain, typeBid, data);
+  const signature = await requestBidSignature(parseInt(bidedNft.tokenId), bidedNft.contract, bidedNft.owner, bidedNft.buyer, bidedNft.buyerBid);
 
-  await axios.post(`/auction/confirm/bid/${elementId}/${signature}/${signerAddress}`, {
-  })
-    .then(async (response) => {
-      auctionNFTs = response.data;
-      await refreshAuctionList(auctionNFTs);
-    })
-    .catch((error) => {
-      console.log("auction.confirmBid: Cannot add new nft to the auction", error);
-    });
+  await backendCall(`/auction/confirm/bid/${elementId}/${signature}/${signerAddress}`);
 };
 
-const trade = async (elementId) => {
+const executeTrade = async (elementId) => {
   const marketplaceContract = new ethers.Contract(MARKETPLACE_ADDRESS, MARKETPLACE_ABI, provider);
   const contractWithSigner = marketplaceContract.connect(signer);
   const bidedNft = auctionNFTs.find((nft) => nft.elementId === elementId);
+  const btnTradeElement = document.getElementById("btn-trade");
 
   await contractWithSigner.createMarketSale(
     ERC721_ADDRESS,
@@ -365,60 +247,79 @@ const trade = async (elementId) => {
     bidedNft.buyerBid,
     ERC20_ADDRESS,
   );
-
-  document.getElementById("btn-trade").disabled = true;
-  document.getElementById("btn-trade").innerHTML = "<span class='spinner-border spinner-border-sm' role='status' aria-hidden='true'></span> Trade";
-  marketplaceContract.on("CreateMarketSale", async (erc721Address, tokenId, sellerAddress, buyerAddress, sellAmount, erc20Address) => {
+  marketplaceContract.on("CreateMarketSale", async () => {
     await finishAuction(bidedNft.elementId);
   });
+
+  btnTradeElement.disabled = true;
+  btnTradeElement.innerHTML = "<span class='spinner-border spinner-border-sm' role='status' aria-hidden='true'></span> Trade";
 };
 
 const finishAuction = async (elementId) => {
-  await axios.post(`/auction/finish/${elementId}`, {
-  })
-    .then(async (response) => {
-      auctionNFTs = response.data;
-      await refreshAuctionList(auctionNFTs);
-    })
-    .catch((error) => {
-      console.log("auction.finishAuction: Cannot add new nft to the auction", error);
-    });
+  await backendCall(`/auction/finish/${elementId}`);
 };
 
-const setAuctionButton = async () => {
-  const btn = document.getElementById("auction-btn");
-  if (await checkApproveAllERC721()) {
-    btn.onclick = prepareAuction;
-    btn.innerHTML = "New Auction";
-    btn.disabled = false;
-  } else {
-    btn.onclick = approveAllERC721;
-    btn.innerHTML = "Enable Auction";
-  }
+const approveAllERC721 = () => {
+  const erc721Contract = new ethers.Contract(ERC721_ADDRESS, ERC721_ABI, provider);
+  const contractWithSigner = erc721Contract.connect(signer);
+  const auctionBtnElement = document.getElementById("auction-btn");
+
+  contractWithSigner.setApprovalForAll(MARKETPLACE_ADDRESS, true);
+
+  auctionBtnElement.innerHTML = "<span class='spinner-border spinner-border-sm' role='status' aria-hidden='true'></span> Enable Auction";
+  auctionBtnElement.disabled = true;
+
+  erc721Contract.on("ApprovalForAll", async (owner, operator) => {
+    if (owner === await signer.getAddress() && operator === MARKETPLACE_ADDRESS) {
+      await setAuctionButton();
+    }
+  });
 };
 
-const initialSetup = async () => {
-  // Pedir si tiene el all aproval
-  await setAuctionButton();
-  // mostrar boton A o B
+const approveERC20 = async () => {
+  const btnBidConfirmElement = document.getElementById("btn-bid-confirm");
+  const erc20Contract = new ethers.Contract(ERC20_ADDRESS, ERC20_ABI, provider);
+  const contractWithSigner = erc20Contract.connect(signer);
+
+  contractWithSigner.approve(MARKETPLACE_ADDRESS, ethers.constants.MaxUint256);
+
+  btnBidConfirmElement.innerHTML = "<span class='spinner-border spinner-border-sm' role='status' aria-hidden='true'></span> Enable";
+  btnBidConfirmElement.disabled = true;
+
+  erc20Contract.on("Approval", async (owner) => {
+    if (owner === await signer.getAddress()) {
+      setBtnBid();
+    }
+  });
 };
 
-document.addEventListener("DOMContentLoaded", async (event) => {
+const drawWebsite = () => {
+  document.getElementById("wallet-container").classList.remove("visible");
+  document.getElementById("wallet-container").classList.add("invisible");
+  document.getElementById("page-container").classList.remove("invisible");
+  document.getElementById("page-container").classList.add("visible");
+};
+
+document.addEventListener("DOMContentLoaded", async () => {
   if (window.ethereum) {
+    document.getElementById("wallet-container").classList.add("visible");
+    document.getElementById("wallet-container").classList.remove("invisible");
+    document.getElementById("page-container").classList.add("invisible");
+    document.getElementById("page-container").classList.remove("visible");
     provider = new ethers.providers.Web3Provider(window.ethereum);
 
     await provider.send("eth_requestAccounts", []);
+    drawWebsite();
     signer = provider.getSigner();
-    chainId = await provider.getNetwork();
-    domain = {
-      name: "Cheap NFT Marketplace",
-      version: "1",
-      chainId: chainId.chainId,
-      verifyingContract: MARKETPLACE_ADDRESS,
-    };
+
+    setDomain(provider);
     await initialSetup();
     getListedNfts();
   } else {
-    console.error("Install Metamask");
+    location.href = "/";
   }
+});
+
+window.ethereum.on("accountsChanged", () => {
+  location.reload();
 });
