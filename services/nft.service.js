@@ -5,7 +5,7 @@ const { ethers } = require("ethers");
 const axios = require("axios");
 const erc721Abi = require("../ABI/erc721.abi");
 
-const provider = new ethers.providers.JsonRpcProvider("https://eth-rinkeby.alchemyapi.io/v2/WWJwKWkSCfJISmjtheW46Dz1Zbti0VLA"); // Refactor to robsten and parametrize
+const provider = new ethers.providers.JsonRpcProvider(process.env.PROVIDER);
 nftService.getDetails = async (tokenAddress, tokenId) => {
   const contract = new ethers.Contract(tokenAddress, erc721Abi, provider);
   let metadata = { };

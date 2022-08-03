@@ -1,10 +1,7 @@
-// Deprecated
-
 const signatureService = {};
 const { ethers } = require("ethers");
 
-const PROVIDER_URL = "https://eth-rinkeby.alchemyapi.io/v2/WWJwKWkSCfJISmjtheW46Dz1Zbti0VLA";
-const provider = new ethers.providers.JsonRpcProvider(PROVIDER_URL);
+const provider = new ethers.providers.JsonRpcProvider(process.env.PROVIDER);
 
 signatureService.verify = async (signatureType, signature, owner, params) => {
   let domain;
@@ -12,15 +9,15 @@ signatureService.verify = async (signatureType, signature, owner, params) => {
   let data;
 
   if (signatureType === "listing") {
-    [domain, type, data] = await signatureService._prepareListingSignature(params);
+    [domain, type, data] = await signatureService.prepareListingSignature(params);
   } else if (signatureType === "bid") {
-    [domain, type, data] = await signatureService._prepareBidSignature(params);
+    [domain, type, data] = await signatureService.prepareBidSignature(params);
   }
 
   return ethers.utils.verifyTypedData(domain, type, data, signature) === owner;
 };
 
-signatureService._prepareBidSignature = async (_data) => {
+signatureService.prepareBidSignature = async (_data) => {
   const data = {
     tokenId: _data.tokenId,
     contractAddress: _data.contract,
@@ -41,16 +38,16 @@ signatureService._prepareBidSignature = async (_data) => {
   const network = await provider.getNetwork();
 
   const domain = {
-    name: "Cheap NFT Marketplace",
+    name: process.env.APP_NAME,
     version: "1",
     chainId: network.chainId,
-    verifyingContract: "0x08a01AE2547c67B7ece24BcCeabB61159675c6bF",
+    verifyingContract: process.env.MARKETPLACE_CONTRACT,
   };
 
   return [domain, type, data];
 };
 
-signatureService._prepareListingSignature = async (_data) => {
+signatureService.prepareListingSignature = async (_data) => {
   const data = {
     tokenId: _data.tokenId,
     contractAddress: _data.tokenAddress,
@@ -67,10 +64,10 @@ signatureService._prepareListingSignature = async (_data) => {
 
   const network = await provider.getNetwork();
   const domain = {
-    name: "Cheap NFT Marketplace",
+    name: process.env.APP_NAME,
     version: "1",
     chainId: network.chainId,
-    verifyingContract: "0x08a01AE2547c67B7ece24BcCeabB61159675c6bF",
+    verifyingContract: process.env.MARKETPLACE_CONTRACT,
   };
 
   return [domain, type, data];
