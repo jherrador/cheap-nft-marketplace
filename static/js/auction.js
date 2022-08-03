@@ -35,6 +35,8 @@ const refreshAuctionList = (nfts) => {
   if (nfts.length <= 0) {
     return;
   }
+  document.getElementById("listed-nft").style.display = "inline";
+
   nfts.forEach(async (nft) => {
     let button = "";
     const signerAddress = await signer.getAddress();
@@ -80,6 +82,7 @@ const getListedNfts = async () => {
   })
     .then(async (response) => {
       auctionNFTs = response.data;
+
       await refreshAuctionList(auctionNFTs);
     })
     .catch((error) => {
@@ -132,6 +135,7 @@ const listAllNfts = async () => {
 };
 
 const prepareAuction = async () => {
+  document.getElementById("auction-form").style.display = "none";
   createAuction.show();
 
   const nfts = await listAllNfts();
@@ -140,6 +144,8 @@ const prepareAuction = async () => {
 
   if (nfts.length === 0 || nfts === undefined) {
     document.getElementById("owner_nfts").innerHTML = "<button class=\"btn btn-primary\" onclick=\"mint()\">Mint NFT </button>";
+  } else {
+    document.getElementById("auction-form").style.display = "inline";
   }
   nfts.forEach((nft) => {
     appendNFTToList(nft);
@@ -167,6 +173,20 @@ const mint = async () => {
   const contractWithSigner = erc721Contract.connect(signer);
 
   contractWithSigner.createCollectible(await signer.getAddress(), DEFAULT_TOKEN_URI);
+
+  erc721Contract.on("Transfer", (from, to, tokenID) => {
+    location.reload();
+  });
+};
+const mintErc20 = async () => {
+  const erc20Contract = new ethers.Contract(ERC20_ADDRESS, ERC20_ABI, provider);
+  const contractWithSigner = erc20Contract.connect(signer);
+
+  contractWithSigner.mint(await signer.getAddress(), ethers.utils.parseEther("100"));
+
+  erc20Contract.on("Transfer", (from, to, tokenID) => {
+    location.reload();
+  });
 };
 
 const approveAllERC721 = () => {
@@ -238,6 +258,12 @@ const verifySignature = async (signature, auction) => {
   console.log(expectedSignerAddress);
   console.log(recoveredAddress === expectedSignerAddress);
 // true
+};
+
+const splitSignature = (signature) => {
+  const expanded = ethers.utils.splitSignature(signature);
+
+  console.log(expanded);
 };
 
 const createBid = async () => {
