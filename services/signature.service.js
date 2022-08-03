@@ -17,9 +17,6 @@ signatureService.verify = async (signatureType, signature, owner, params) => {
     [domain, type, data] = await signatureService._prepareBidSignature(params);
   }
 
-  console.log("D");
-  console.log(ethers.utils.verifyTypedData(domain, type, data, signature));
-  console.log(owner);
   return ethers.utils.verifyTypedData(domain, type, data, signature) === owner;
 };
 
@@ -31,7 +28,7 @@ signatureService._prepareBidSignature = async (_data) => {
     bidderAddress: _data.buyer,
     bid: _data.buyerBid,
   };
-  console.log(data);
+
   const type = {
     Auction: [
       { name: "tokenId", type: "uint256" },
@@ -47,7 +44,7 @@ signatureService._prepareBidSignature = async (_data) => {
     name: "Cheap NFT Marketplace",
     version: "1",
     chainId: network.chainId,
-    verifyingContract: "0x81782d0400361293ACB55A6709Ef212C70EAdB4e",
+    verifyingContract: "0x08a01AE2547c67B7ece24BcCeabB61159675c6bF",
   };
 
   return [domain, type, data];
@@ -73,7 +70,7 @@ signatureService._prepareListingSignature = async (_data) => {
     name: "Cheap NFT Marketplace",
     version: "1",
     chainId: network.chainId,
-    verifyingContract: "0x81782d0400361293ACB55A6709Ef212C70EAdB4e",
+    verifyingContract: "0x08a01AE2547c67B7ece24BcCeabB61159675c6bF",
   };
 
   return [domain, type, data];

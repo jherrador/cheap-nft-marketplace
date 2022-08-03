@@ -39,8 +39,6 @@ controller.new = async (req, res) => {
     status: "listed",
     lastUpdate: moment().format(),
   };
-  console.log(newItem);
-
   req.app.get("listedNfts").push(newItem);
 
   res.json(req.app.get("listedNfts"));

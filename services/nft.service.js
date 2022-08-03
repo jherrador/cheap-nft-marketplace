@@ -10,8 +10,7 @@ nftService.getDetails = async (tokenAddress, tokenId) => {
   const contract = new ethers.Contract(tokenAddress, erc721Abi, provider);
   let metadata = { };
   let tokenURI = "";
-  console.log(contract);
-  console.log(contract.address);
+
   await contract.tokenURI(tokenId).then(async (_tokenURI) => {
     tokenURI = _tokenURI;
   });
@@ -27,7 +26,6 @@ nftService.getDetails = async (tokenAddress, tokenId) => {
 
   metadata.image = imgUrl;
 
-  console.log(metadata);
   return metadata;
 };
 
