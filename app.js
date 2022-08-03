@@ -23,6 +23,13 @@ const routes = require("./routes/auction.routes");
 
 app.use(routes);
 
+app.use((req, res) => {
+  res.status(404);
+  if (req.accepts("html")) {
+    res.render("pages/index", { url: req.url });
+  }
+});
+
 app.listen(3000, () => {
   console.log(`${app.get("appName")} application running on port ${app.get("port")}`);
 });

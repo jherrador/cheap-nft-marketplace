@@ -3,6 +3,7 @@ const controller = require("../controllers/auction.controller");
 
 const router = express.Router();
 
+router.get("/", controller.index);
 router.get("/auction/list", controller.list);
 router.get("/auction/listedItems", controller.listAllNfts);
 

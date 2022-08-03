@@ -6,6 +6,9 @@ const nftService = require("../services/nft.service");
 
 const controller = {};
 
+controller.index = (req, res) => {
+  res.render("pages/index");
+};
 controller.list = (req, res) => {
   res.render("pages/auction", { nfts: req.app.get("listedNfts") });
 };
